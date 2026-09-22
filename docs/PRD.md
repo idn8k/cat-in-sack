@@ -18,26 +18,26 @@ To successfully scaffold the backend and local state, the AI should understand t
 
 *   **`User`**: Account owner (email, preferences).
 *   **`Household`**: A shared workspace for users to collaborate on cat logistics.
-*   **`Feline`**: The cat profile (name, DOB, breed, target weight, dietary restrictions).
-*   **`Event`**: Time-bound activities (type: `VET`, `GROOMING`, `DAYCARE`). Contains date, location, provider details, and recurrence rules.
-*   **`Inventory`**: Consumable supplies (type: `FOOD`, `LITTER`, `MEDS`). Contains current stock level, daily consumption rate, and reorder threshold.
+*   **`Feline`**: The cat profile (name, DOB, breed, target weight in kg, dietary restrictions).
+*   **`Event`**: Time-bound activities (type: `VET`, `GROOMING`, `DAYCARE`, `WEIGHT`). Belongs to exactly one `Feline`. Contains date, location, provider details, and recurrence rules for `VET`/`GROOMING`/`DAYCARE`; a numeric `value` in kg for `WEIGHT`. A Feline's medical history and weight trend are both read as filtered views over its Events — there is no separate weight log.
+*   **`Inventory`**: Consumable supplies (type: `FOOD`, `LITTER`, `MEDS`), tracked at the `Household` level (not per-`Feline`, even for `MEDS`). Contains current stock level and daily consumption rate, from which a depletion date is computed; the reorder alert is that depletion date crossing within a per-item threshold (default 3 days) — not a separately-tracked stock-quantity rule.
 
 ## 5. Key Features & Acceptance Criteria
 
 ### 5.1. Authentication & Onboarding
 *   **Flow:** Social SSO (Apple/Google) and Email OTP (via Resend).
 *   **AC1:** User can log in without a password.
-*   **AC2:** Post-login, user is prompted to create their first `Feline` profile.
+*   **AC2:** Post-login, user must create their first `Feline` profile before reaching the main app — a hard gate, not a skippable prompt.
 
 ### 5.2. Dashboard & Upcoming Tasks
 *   **Flow:** A chronologically sorted feed of upcoming events and critical alerts (e.g., "Low on Litter").
 *   **AC1:** UI displays the next 7 days of scheduled events.
-*   **AC2:** Highlights inventory items that have crossed below their reorder threshold.
+*   **AC2:** Highlights inventory items whose computed depletion date has crossed within their reorder threshold (default 3 days) — the same signal as §5.3 AC2, not an independent stock-quantity check.
 
 ### 5.3. Inventory Management (The "Pantry")
 *   **Flow:** A CRUD interface for tracking cat supplies.
 *   **AC1:** User can add an item, define the total amount (e.g., 5kg bag of food), and set a daily burn rate (e.g., 100g/day).
-*   **AC2:** System calculates estimated depletion date and triggers a warning 3 days prior.
+*   **AC2:** System calculates estimated depletion date and triggers a warning 3 days prior (the same alert surfaced on the dashboard per §5.2 AC2).
 
 ### 5.4. Logistics & Scheduling
 *   **Flow:** Calendar integration for external appointments.

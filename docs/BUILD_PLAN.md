@@ -13,18 +13,18 @@ Keep the PRD's five entities, but simplify relationships for v1:
 - `User` — email, single implicit personal `Household` (no invite/sharing flow yet, but the schema keeps the `Household` foreign key from day one so Phase 2 doesn't require a migration).
 - `Household` — created automatically at signup, 1 user only in MVP.
 - `Feline` — name, DOB, breed, target weight, dietary notes. Multiple cats per household allowed (not multiple users).
-- `Event` — type (`VET`, `GROOMING`, `DAYCARE`), date, location, provider, notes. **No recurrence engine in MVP** — user re-creates recurring events manually; `recurrenceRule` field left in schema but unused until Phase 2.
-- `Inventory` — type (`FOOD`, `LITTER`, `MEDS`), total amount, daily burn rate, computed depletion date, reorder threshold.
+- `Event` — type (`VET`, `GROOMING`, `DAYCARE`, `WEIGHT`), required `Feline` reference, date, location, provider, notes (for `VET`/`GROOMING`/`DAYCARE`) or a numeric `value` in kg (for `WEIGHT`). Weight history and medical history are both just filtered views over a Feline's Events — no separate weight-log entity. **No recurrence engine in MVP** — user re-creates recurring events manually; `recurrenceRule` field left in schema but unused until Phase 2.
+- `Inventory` — type (`FOOD`, `LITTER`, `MEDS`), total amount, daily burn rate, computed depletion date, reorder threshold (in days, default 3 — the dashboard low-stock highlight and the Pantry warning are the same computed signal). Household-scoped only; no `Feline` reference, even for `MEDS`.
 
 ## Phased Roadmap
 
 ### Phase 1 — MVP (single-user core loop)
-1. **Auth**: Email OTP via Resend only. Apple/Google SSO deferred.
-2. **Onboarding**: signup → create first `Feline` profile (PRD AC2).
+1. **Auth**: Email OTP via Resend only. Apple/Google SSO deferred. Dev/local: console-logged OTP stub first; real Resend account wired in as a deliberate milestone before Phase 1 is considered done.
+2. **Onboarding**: signup → create first `Feline` profile — hard gate, the bottom tabs don't unlock until one exists (PRD AC2).
 3. **Home dashboard**: next 7 days of `Event`s + inventory items below reorder threshold (PRD 5.2 AC1/AC2).
 4. **Pantry (Inventory)**: CRUD, burn-rate input, depletion-date calculation, 3-day-prior warning (PRD 5.3 AC1/AC2).
 5. **Logistics**: manually log past/future vet visits with text notes (image attachments deferred). No recurrence rule engine yet (PRD 5.4 AC1 only; AC2 deferred).
-6. **Cats tab**: profile view, weight log (manual entries), medical history as a list of past `Event`s.
+6. **Cats tab**: profile view, weight trend (Events of type `WEIGHT`), medical history (Events of type `VET`/`GROOMING`/`DAYCARE`) — one Event stream per Feline, filtered by type.
 7. **Settings tab**: minimal — account/email, logout. Household sharing UI deferred.
 
 ### Phase 2 — Collaboration & richer scheduling
@@ -36,8 +36,8 @@ Keep the PRD's five entities, but simplify relationships for v1:
 ## Tech Stack & Local-Dev Substitutes (given no infra accounts yet)
 | PRD choice | MVP reality |
 |---|---|
-| MongoDB Atlas | Local MongoDB via Docker Compose for dev; Atlas only needed at deploy time |
-| Resend (OTP email) | Resend has a generous free tier — create a free account for real OTP delivery; if the user prefers zero setup, a console-logged OTP stub can gate this until an account exists |
+| MongoDB Atlas | `mongodb-memory-server` for local dev (in-process, no Docker install required); Atlas only needed at deploy time |
+| Resend (OTP email) | Console-logged OTP stub for local dev from day one; real Resend account wired in as a deliberate Phase 1 milestone, not before |
 | Upstash (Redis) | Not needed for MVP (no recurring jobs yet) — defer entirely to Phase 2 |
 | Apple/Google SSO | Deferred to Phase 2, removes need for Apple Developer / Google Cloud console setup now |
 
@@ -65,8 +65,10 @@ Shared types package avoids drift between the Mongoose schema and the app's Type
 8. Cats tab: profile + manual weight log + medical history list.
 
 ## Verification
-No code exists yet, so verification for *this* planning step is: confirm this phased scope and repo structure match the user's intent before scaffolding begins. Once scaffolding starts, each milestone above should be verified by running the Expo app (`expo start`) against the local Next.js API + Dockerized MongoDB, exercising the flow described in that milestone's PRD acceptance criteria.
+No code exists yet, so verification for *this* planning step is: confirm this phased scope and repo structure match the user's intent before scaffolding begins. Once scaffolding starts, each milestone above should be verified by running the Expo app (`expo start`) against the local Next.js API + `mongodb-memory-server`, exercising the flow described in that milestone's PRD acceptance criteria.
 
-## Open Assumptions to Flag
-- Monorepo vs. separate repos for mobile/API — assumed monorepo for a solo/small-team build; flag if the user wants them split.
-- OTP delivery during dev — assumed a free Resend account is acceptable; flag if a fully offline stub is preferred instead.
+## Resolved via grilling session (2026-09-22)
+- Monorepo confirmed — see `docs/adr/0001-monorepo-for-mobile-and-api.md`.
+- OTP delivery: console-logged stub for dev, real Resend wired in as a Phase 1 milestone.
+- Local Mongo: `mongodb-memory-server`, no Docker dependency.
+- Domain model sharpened (Event↔Feline, Inventory scoping, weight-as-Event, kg-only, onboarding hard gate) — see `CONTEXT.md` for definitions.
