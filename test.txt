@@ -1,8 +1,0 @@
-Test file
-=========
-
-Created to verify the repository and push workflow are working.
-
-Repo: idn8k/cat-in-sack
-Branch: claude/zealous-fermat-tbft1y
-Date: 2026-09-22
