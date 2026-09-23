@@ -2,9 +2,10 @@
 # PreToolUse guardrail for git branch creation.
 #
 # Blocks `git checkout -b`, `git switch -c`, and `git branch <name>` unless:
-#   1. local main/master is up to date with origin, and
+#   1. local main/master is up to date with origin,
 #   2. no other local branch has commits not yet merged into main/master
-#      (catches a forgotten merge from the previous /implement run).
+#      (catches a forgotten merge from the previous /implement run), and
+#   3. the new branch name follows type/slug (e.g. feat/cat-weight-tracking).
 #
 # Any other Bash command passes through untouched.
 set -euo pipefail
@@ -19,6 +20,19 @@ fi
 
 repo_root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
 cd "$repo_root"
+
+# Extract the branch name being created, whichever form was used.
+branch_name=""
+if [[ "$command" =~ checkout[[:space:]]+-b[[:space:]]+([^[:space:]]+) ]]; then
+  branch_name="${BASH_REMATCH[1]}"
+elif [[ "$command" =~ switch[[:space:]]+-c[[:space:]]+([^[:space:]]+) ]]; then
+  branch_name="${BASH_REMATCH[1]}"
+elif [[ "$command" =~ branch[[:space:]]+([A-Za-z0-9][^[:space:]]*) ]]; then
+  branch_name="${BASH_REMATCH[1]}"
+fi
+
+allowed_types="feat|fix|chore|docs|refactor|test|perf|build|ci|style"
+name_pattern="^($allowed_types)/[a-z0-9]+(-[a-z0-9]+)+$"
 
 default_branch="main"
 if ! git show-ref --verify --quiet "refs/heads/$default_branch"; then
@@ -53,6 +67,10 @@ done < <(git for-each-ref refs/heads --format='%(refname:short)')
 if [ "${#stale_branches[@]}" -gt 0 ]; then
   joined=$(printf '%s, ' "${stale_branches[@]}")
   reasons+=("unmerged local branch(es): ${joined%, }. Merge or delete them before starting new work")
+fi
+
+if [ -n "$branch_name" ] && ! [[ "$branch_name" =~ $name_pattern ]]; then
+  reasons+=("branch name '$branch_name' doesn't follow type/slug (e.g. feat/cat-weight-tracking). Allowed types: ${allowed_types//|/, }")
 fi
 
 if [ "${#reasons[@]}" -gt 0 ]; then
