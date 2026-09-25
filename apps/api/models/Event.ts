@@ -10,7 +10,14 @@ const eventSchema = new Schema(
     location: { type: String },
     provider: { type: String },
     notes: { type: String },
-    valueKg: { type: Number, min: 0 },
+    // Strictly positive, matching the shared Zod schema's .positive() — a weigh-in of 0kg isn't meaningful.
+    valueKg: {
+      type: Number,
+      validate: {
+        validator: (v: number) => v > 0,
+        message: "valueKg must be greater than 0",
+      },
+    },
     // Unused until Phase 2 (recurring events) — see docs/BUILD_PLAN.md.
     recurrenceRule: { type: String },
   },
