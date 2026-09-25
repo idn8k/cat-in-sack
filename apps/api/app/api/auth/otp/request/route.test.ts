@@ -51,4 +51,15 @@ describe("POST /api/auth/otp/request", () => {
 
     expect(response.status).toBe(400);
   });
+
+  it("rejects a malformed JSON body instead of throwing", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/auth/otp/request", {
+        method: "POST",
+        body: "{not json",
+      }),
+    );
+
+    expect(response.status).toBe(400);
+  });
 });

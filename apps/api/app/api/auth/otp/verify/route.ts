@@ -1,6 +1,7 @@
 import { verifyOtpSchema } from "@cat-in-sack/shared";
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "../../../../../lib/db";
+import { readJsonBody } from "../../../../../lib/http";
 import { hashOtpCode } from "../../../../../lib/otp";
 import { generateSessionToken, hashSessionToken, SESSION_TTL_MS } from "../../../../../lib/session";
 import { Household, OtpCode, Session, User } from "../../../../../models";
@@ -12,7 +13,12 @@ function isDuplicateKeyError(error: unknown): boolean {
 export async function POST(request: Request) {
   await connectToDatabase();
 
-  const parsed = verifyOtpSchema.safeParse(await request.json());
+  const body = await readJsonBody(request);
+  if ("error" in body) {
+    return body.error;
+  }
+
+  const parsed = verifyOtpSchema.safeParse(body.data);
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid email or code" }, { status: 400 });
   }

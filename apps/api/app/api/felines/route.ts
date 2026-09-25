@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import type { HydratedDocument } from "mongoose";
 import { authenticate } from "../../../lib/auth";
 import { connectToDatabase } from "../../../lib/db";
+import { readJsonBody } from "../../../lib/http";
 import { Feline } from "../../../models";
 import type { FelineDocument } from "../../../models/Feline";
 
@@ -39,7 +40,12 @@ export async function POST(request: Request) {
     return auth.error;
   }
 
-  const parsed = createFelineSchema.safeParse(await request.json());
+  const body = await readJsonBody(request);
+  if ("error" in body) {
+    return body.error;
+  }
+
+  const parsed = createFelineSchema.safeParse(body.data);
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid Feline details" }, { status: 400 });
   }

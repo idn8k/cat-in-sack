@@ -116,4 +116,15 @@ describe("POST /api/auth/otp/verify", () => {
 
     expect(response.status).toBe(401);
   });
+
+  it("rejects a malformed JSON body instead of throwing", async () => {
+    const response = await verifyOtp(
+      new Request("http://localhost/api/auth/otp/verify", {
+        method: "POST",
+        body: "{not json",
+      }),
+    );
+
+    expect(response.status).toBe(400);
+  });
 });

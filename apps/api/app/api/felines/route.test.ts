@@ -106,6 +106,20 @@ describe("/api/felines", () => {
 
       expect(response.status).toBe(400);
     });
+
+    it("rejects a malformed JSON body instead of throwing", async () => {
+      const token = await createSessionFor("owner3@example.com");
+
+      const response = await POST(
+        new Request("http://localhost/api/felines", {
+          method: "POST",
+          headers: { authorization: `Bearer ${token}` },
+          body: "{not json",
+        }),
+      );
+
+      expect(response.status).toBe(400);
+    });
   });
 
   describe("GET", () => {
