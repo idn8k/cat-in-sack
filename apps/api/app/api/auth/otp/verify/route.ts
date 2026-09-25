@@ -5,6 +5,10 @@ import { hashOtpCode } from "../../../../../lib/otp";
 import { generateSessionToken, hashSessionToken, SESSION_TTL_MS } from "../../../../../lib/session";
 import { Household, OtpCode, Session, User } from "../../../../../models";
 
+function isDuplicateKeyError(error: unknown): boolean {
+  return typeof error === "object" && error !== null && (error as { code?: number }).code === 11000;
+}
+
 export async function POST(request: Request) {
   await connectToDatabase();
 
@@ -13,7 +17,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid email or code" }, { status: 400 });
   }
 
-  const email = parsed.data.email.toLowerCase().trim();
+  const { email } = parsed.data;
 
   const otp = await OtpCode.findOne({
     email,
@@ -32,7 +36,21 @@ export async function POST(request: Request) {
   let user = await User.findOne({ email });
   if (!user) {
     const household = await Household.create({});
-    user = await User.create({ email, householdId: household._id });
+    try {
+      user = await User.create({ email, householdId: household._id });
+    } catch (error) {
+      // Lost a race with a concurrent verification for the same new email — an unused
+      // Household is left behind, and the User that won the race is the source of truth.
+      if (!isDuplicateKeyError(error)) {
+        throw error;
+      }
+      await Household.deleteOne({ _id: household._id });
+      user = await User.findOne({ email });
+    }
+  }
+
+  if (!user) {
+    return NextResponse.json({ error: "Failed to create session" }, { status: 500 });
   }
 
   const token = generateSessionToken();

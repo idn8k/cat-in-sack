@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
+    "@cat-in-sack/shared": "*",
     "expo": "~57.0.24",
     "expo-constants": "~57.0.19",
     "expo-linking": "~57.0.10",
@@ -18,8 +19,6 @@
   "devDependencies": {
     "@types/react": "~19.2.2",
     "babel-preset-expo": "~57.0.12",
-    "eslint": "^9.0.0",
-    "eslint-config-expo": "~57.0.2",
     "typescript": "~6.0.3"
   },
   "scripts": {

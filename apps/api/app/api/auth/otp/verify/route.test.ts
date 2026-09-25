@@ -1,7 +1,7 @@
 import { MongoMemoryServer } from "mongodb-memory-server";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { connectToDatabase, disconnectFromDatabase } from "../../../../../lib/db";
-import { OtpCode } from "../../../../../models";
+import { Household, OtpCode } from "../../../../../models";
 import { POST as requestOtp } from "../request/route";
 import { POST as verifyOtp } from "./route";
 
@@ -74,6 +74,27 @@ describe("POST /api/auth/otp/verify", () => {
     expect(second.user.id).toBe(first.user.id);
     expect(second.user.householdId).toBe(first.user.householdId);
     expect(second.token).not.toBe(first.token);
+  });
+
+  it("creates exactly one User and Household when two verifications for a new email race", async () => {
+    const email = "racey-user@example.com";
+    const codeA = await requestCodeFor(email);
+    const codeB = await requestCodeFor(email);
+    const householdCountBefore = await Household.countDocuments({});
+
+    const [responseA, responseB] = await Promise.all([
+      verifyOtp(jsonRequest({ email, code: codeA })),
+      verifyOtp(jsonRequest({ email, code: codeB })),
+    ]);
+    const [bodyA, bodyB] = await Promise.all([responseA.json(), responseB.json()]);
+
+    expect(responseA.status).toBe(200);
+    expect(responseB.status).toBe(200);
+    expect(bodyA.user.id).toBe(bodyB.user.id);
+    expect(bodyA.user.householdId).toBe(bodyB.user.householdId);
+
+    const householdCountAfter = await Household.countDocuments({});
+    expect(householdCountAfter - householdCountBefore).toBe(1);
   });
 
   it("rejects an incorrect code", async () => {

@@ -1,4 +1,5 @@
-import { createHash, randomInt } from "node:crypto";
+import { randomInt } from "node:crypto";
+import { sha256Hex } from "./crypto";
 
 export const OTP_LENGTH = 6;
 export const OTP_TTL_MS = 10 * 60 * 1000;
@@ -8,5 +9,5 @@ export function generateOtpCode(): string {
 }
 
 export function hashOtpCode(code: string): string {
-  return createHash("sha256").update(code).digest("hex");
+  return sha256Hex(code);
 }

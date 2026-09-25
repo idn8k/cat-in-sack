@@ -1,3 +1,5 @@
+import { sessionSchema, type Session } from "@cat-in-sack/shared";
+
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
 
 export async function requestOtp(email: string): Promise<void> {
@@ -12,7 +14,7 @@ export async function requestOtp(email: string): Promise<void> {
   }
 }
 
-export async function verifyOtp(email: string, code: string): Promise<{ token: string }> {
+export async function verifyOtp(email: string, code: string): Promise<Session> {
   const response = await fetch(`${API_URL}/api/auth/otp/verify`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -23,5 +25,5 @@ export async function verifyOtp(email: string, code: string): Promise<{ token: s
     throw new Error("Invalid or expired code");
   }
 
-  return response.json();
+  return sessionSchema.parse(await response.json());
 }

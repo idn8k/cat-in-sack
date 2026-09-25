@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid email" }, { status: 400 });
   }
 
-  const email = parsed.data.email.toLowerCase().trim();
+  const { email } = parsed.data;
   const code = generateOtpCode();
 
   await OtpCode.create({
