@@ -1,4 +1,5 @@
 import { Stack } from "expo-router";
+import "../../global.css";
 import { SessionProvider, useSession } from "../lib/auth-context";
 import { SplashScreenController } from "../lib/splash";
 
@@ -12,12 +13,16 @@ export default function RootLayout() {
 }
 
 function RootNavigator() {
-  const { session } = useSession();
+  const { session, hasFeline } = useSession();
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Protected guard={!!session}>
+      <Stack.Protected guard={!!session && hasFeline === true}>
         <Stack.Screen name="(tabs)" />
+      </Stack.Protected>
+
+      <Stack.Protected guard={!!session && hasFeline === false}>
+        <Stack.Screen name="onboarding" />
       </Stack.Protected>
 
       <Stack.Protected guard={!session}>

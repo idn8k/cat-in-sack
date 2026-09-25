@@ -4,6 +4,7 @@ node_modules/
 # Next.js (apps/api)
 apps/api/.next/
 apps/api/out/
+apps/api/next-env.d.ts
 
 # Env
 .env
